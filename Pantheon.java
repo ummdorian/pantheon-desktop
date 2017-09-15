@@ -1,7 +1,11 @@
 /*
  * Pantheon Integration Program
  */
-import javax.swing.*;        
+import javax.swing.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Properties;       
 
 public class Pantheon {
 	
@@ -42,6 +46,33 @@ public class Pantheon {
         frame.setVisible(true);
 		
     }
+	
+	/**
+	* See http://www.mkyong.com/java/java-properties-file-examples/
+	**/
+	public void saveConfigValue(String key, String value){
+		
+		Properties prop = new Properties();
+		OutputStream output = null;
+		
+		// Try saving config
+		try {
+			output = new FileOutputStream("config.properties");
+			prop.setProperty(key, value);
+			prop.store(output, null);
+		} catch (IOException io) {
+			io.printStackTrace();
+		} finally {
+			if (output != null) {
+				try {
+					output.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+
+		}
+	}
 
     public static void main(String[] args) {
         //Schedule a job for the event-dispatching thread:
