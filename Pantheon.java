@@ -58,7 +58,8 @@ public class Pantheon {
 		// Button Submit Function
 		tokenTextFieldSaveButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				// Config Save
+				// Creating another instance of the pantheon class to use it's saveConfigValue
+				// method, because it wouldn't let me use the one in this instance
 				Pantheon pantheonTemp = new Pantheon();
 				pantheonTemp.saveConfigValue("accessToken",tokenTextField.getText());
 			}
