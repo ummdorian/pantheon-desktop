@@ -2,11 +2,7 @@
  * Pantheon Integration Program
  */
 import javax.swing.*;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Properties;
 import java.awt.*;
 import java.awt.event.*;  
@@ -14,10 +10,13 @@ import java.awt.event.*;
 public class Pantheon {
 	
 	protected JFrame frame;
-	
+	protected JPanel mainPanel;
 	protected JPanel tokenTextFieldPanel;
-	protected JLabel label;
+	protected JLabel tokenTextFieldLabel;
 	protected JTextField tokenTextField;
+	protected JPanel upstreamPanel;
+	protected JLabel upstreamLabel;
+	protected JList upstreamList;
 	
 	protected InputStream input = null;
 	protected Properties prop = new Properties();
@@ -33,6 +32,9 @@ public class Pantheon {
         // Create Window
         frame = new JFrame("Pantheon Utilities");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		mainPanel = new JPanel();
+		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+		frame.add(mainPanel);
 		
 		//----------------------------------------------------
 		// Create Container, Label and Input for Access Token
@@ -40,11 +42,11 @@ public class Pantheon {
 		
 		// Panel
 		tokenTextFieldPanel = new JPanel();
-		frame.getContentPane().add(tokenTextFieldPanel);
+		mainPanel.add(tokenTextFieldPanel);
 		
 		// Label
-		label = new JLabel("Pantheon Access Token");
-		tokenTextFieldPanel.add(label);
+		tokenTextFieldLabel = new JLabel("Pantheon Access Token");
+		tokenTextFieldPanel.add(tokenTextFieldLabel);
 		
 		// Text Field
 		tokenTextField = new JTextField(20);
@@ -52,7 +54,7 @@ public class Pantheon {
 		// Load text field value
 		tokenTextField.setText(loadConfig("accessToken"));  
 		
-		// Button
+		// Save Token Button
 		JButton tokenTextFieldSaveButton = new JButton("Save/Update Token");
 		tokenTextFieldPanel.add(tokenTextFieldSaveButton);
 		// Button Submit Function
@@ -64,7 +66,71 @@ public class Pantheon {
 				pantheonTemp.saveConfigValue("accessToken",tokenTextField.getText());
 			}
 		});
+		
+		// Authenticate Button
+		JButton authenticateButton = new JButton("Authenticate");
+		tokenTextFieldPanel.add(authenticateButton);
+		// Button Submit Function
+		authenticateButton.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e){
+				try{
+					Runtime rt = Runtime.getRuntime();
+					Process pr = rt.exec("cscript ./terminus/vendor/bin/ terminus auth:login --machine-token="+tokenTextField.getText());
+					BufferedReader input = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+					String line=null;
+					while((line=input.readLine()) != null) {
+						System.out.println(line);
+					}
+				}
+				catch(IOException ex){
+					ex.printStackTrace();
+				}
+			}
+		});
 
+		//------------------------------------------------
+		// Create Container, Label and Input for Upstream
+		//------------------------------------------------
+		// Panel
+		upstreamPanel = new JPanel();
+		mainPanel.add(upstreamPanel);
+		
+		// Label
+		upstreamLabel = new JLabel("Select an Upstream");
+		upstreamPanel.add(upstreamLabel);
+		
+		// Upstream Select
+		final DefaultListModel upstreams = new DefaultListModel();
+		upstreams.addElement("Drupal 7");
+		upstreams.addElement("Drupal 8");
+		upstreamList = new JList(upstreams); //data has type Object[]
+		upstreamList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+		upstreamList.setLayoutOrientation(JList.HORIZONTAL_WRAP);
+		upstreamList.setVisibleRowCount(-1);
+		upstreamList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		upstreamPanel.add(upstreamList);
+		
+		// Upstream Refresh Button
+		JButton upstreamRefreshButton = new JButton("Refresh Upstream Options");
+		upstreamPanel.add(upstreamRefreshButton);
+		// Button Submit Function
+		upstreamRefreshButton.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e){
+				try{
+					Runtime rt = Runtime.getRuntime();
+					Process pr = rt.exec("terminus/vendor/bin/terminus upstream:list");
+					BufferedReader input = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+					String line=null;
+					while((line=input.readLine()) != null) {
+						System.out.println(line);
+					}
+				}
+				catch(IOException ex){
+					ex.printStackTrace();
+				}
+			}
+		});
+		
         //Display the window.
         frame.pack();
         frame.setVisible(true);
