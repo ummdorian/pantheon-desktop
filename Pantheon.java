@@ -7,6 +7,9 @@ import java.util.Properties;
 import java.awt.*;
 import java.awt.event.*;
 import java.net.*;
+// https://github.com/stleary/JSON-java
+// https://stackoverflow.com/a/16586100
+import org.json.*;
 
 public class Pantheon {
 	
@@ -20,7 +23,9 @@ public class Pantheon {
 	protected JList upstreamList;
 	
 	protected InputStream input = null;
-	protected Properties prop = new Properties();
+	
+	protected Properties programSettings = new Properties();
+	protected OutputStream propertiesOutputFileStream = null;
 	
 	
 	/**
@@ -53,7 +58,7 @@ public class Pantheon {
 		tokenTextField = new JTextField(20);
 		tokenTextFieldPanel.add(tokenTextField);
 		// Load text field value
-		tokenTextField.setText(loadConfig("accessToken"));  
+		tokenTextField.setText(programSettings.getProperty("accessToken"));  
 		
 		// Save Token Button
 		JButton tokenTextFieldSaveButton = new JButton("Save/Update Token");
@@ -61,10 +66,8 @@ public class Pantheon {
 		// Button Submit Function
 		tokenTextFieldSaveButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				// Creating another instance of the pantheon class to use it's saveConfigValue
-				// method, because it wouldn't let me use the one in this instance
-				Pantheon pantheonTemp = new Pantheon();
-				pantheonTemp.saveConfigValue("accessToken",tokenTextField.getText());
+				programSettings.setProperty("accessToken",tokenTextField.getText());
+				saveConfigValue();
 			}
 		});
 		
@@ -75,7 +78,9 @@ public class Pantheon {
 		authenticateButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
 				//authenticate call here
-				System.out.print(pantheonCall("/authorize/machine-token"));
+				JSONObject authenticationResponse = new JSONObject(pantheonCall("/authorize/machine-token"));
+				programSettings.setProperty("user_id",authenticationResponse.getString("user_id"));
+				saveConfigValue();
 			}
 		});
 
@@ -166,12 +171,12 @@ public class Pantheon {
 		}
 	}
 	
-	public String loadConfig(String key){
+	public void loadConfig(){
 		try {
 			input = new FileInputStream("config.properties");
 			
 			// load a properties file
-			prop.load(input);
+			programSettings.load(input);
 
 		} catch (IOException ex) {
 			ex.printStackTrace();
@@ -184,27 +189,24 @@ public class Pantheon {
 				}
 			}
 		}
-		return prop.getProperty(key);
+		//return prop.getProperty(key);
 	}
 	
 	
 	//See http://www.mkyong.com/java/java-properties-file-examples/
-	public void saveConfigValue(String key, String value){
-		
-		Properties prop = new Properties();
-		OutputStream output = null;
+	public void saveConfigValue(){
 		
 		// Try saving config
 		try {
-			output = new FileOutputStream("config.properties");
-			prop.setProperty(key, value);
-			prop.store(output, null);
+			propertiesOutputFileStream = new FileOutputStream("config.properties");			
+			//programSettings.setProperty(key, value);
+			programSettings.store(propertiesOutputFileStream, null);
 		} catch (IOException io) {
 			io.printStackTrace();
 		} finally {
-			if (output != null) {
+			if (propertiesOutputFileStream != null) {
 				try {
-					output.close();
+					propertiesOutputFileStream.close();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -222,6 +224,8 @@ public class Pantheon {
             public void run() {
 				// Create a new instance of this class so we can call non static functions
 				Pantheon pantheon = new Pantheon();
+				// Load Settings
+				pantheon.loadConfig();
 				// Create and show GUI
                 pantheon.createAndShowGUI(pantheon);
             }
