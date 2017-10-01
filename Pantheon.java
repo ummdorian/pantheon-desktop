@@ -18,9 +18,6 @@ public class Pantheon {
 	protected JPanel tokenTextFieldPanel;
 	protected JLabel tokenTextFieldLabel;
 	protected JTextField tokenTextField;
-	protected JPanel upstreamPanel;
-	protected JLabel upstreamLabel;
-	protected JList upstreamList;
 	
 	protected InputStream input = null;
 	
@@ -67,7 +64,7 @@ public class Pantheon {
 		tokenTextFieldSaveButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
 				programSettings.setProperty("accessToken",tokenTextField.getText());
-				saveConfigValue();
+				saveConfig();
 			}
 		});
 		
@@ -77,42 +74,43 @@ public class Pantheon {
 		// Button Submit Function
 		authenticateButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				//authenticate call here
+				// authenticate call here
 				JSONObject authenticationResponse = new JSONObject(pantheonCall("/authorize/machine-token"));
+				// save returned user_id
 				programSettings.setProperty("user_id",authenticationResponse.getString("user_id"));
-				saveConfigValue();
+				saveConfig();
 			}
 		});
 
-		//------------------------------------------------
-		// Create Container, Label and Input for Upstream
-		//------------------------------------------------
+		//-----------------------------------------------------
+		// Create Container, Label and Input for Site to Clone
+		//-----------------------------------------------------
 		// Panel
-		upstreamPanel = new JPanel();
-		mainPanel.add(upstreamPanel);
+		JPanel siteToClonePanel = new JPanel();
+		mainPanel.add(siteToClonePanel);
 		
 		// Label
-		upstreamLabel = new JLabel("Select an Upstream");
-		upstreamPanel.add(upstreamLabel);
+		JLabel siteCloneFieldLabel = new JLabel("Select a Site to Clone");
+		siteToClonePanel.add(siteCloneFieldLabel);
 		
-		// Upstream Select
-		final DefaultListModel upstreams = new DefaultListModel();
-		upstreams.addElement("Drupal 7");
-		upstreams.addElement("Drupal 8");
-		upstreamList = new JList(upstreams); //data has type Object[]
-		upstreamList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
-		upstreamList.setLayoutOrientation(JList.HORIZONTAL_WRAP);
-		upstreamList.setVisibleRowCount(-1);
-		upstreamList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		upstreamPanel.add(upstreamList);
+		// Site To Clone Select List
+		final DefaultListModel siteToCloneSelectOptions = new DefaultListModel();
+		siteToCloneSelectOptions.addElement("Site 1");
+		siteToCloneSelectOptions.addElement("Site 2");
+		JList siteToCloneSelectList = new JList(siteToCloneSelectOptions);
+		siteToCloneSelectList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+		siteToCloneSelectList.setLayoutOrientation(JList.HORIZONTAL_WRAP);
+		siteToCloneSelectList.setVisibleRowCount(-1);
+		siteToCloneSelectList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		siteToClonePanel.add(siteToCloneSelectList);
 		
 		// Upstream Refresh Button
-		JButton upstreamRefreshButton = new JButton("Refresh Upstream Options");
-		upstreamPanel.add(upstreamRefreshButton);
+		JButton updateSiteOptionsButton = new JButton("Update Site Options");
+		siteToClonePanel.add(updateSiteOptionsButton);
 		// Button Submit Function
-		upstreamRefreshButton.addActionListener(new ActionListener(){
+		updateSiteOptionsButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				// upstream list retrieve here
+				// update site options
 			}
 		});
 		
@@ -194,7 +192,7 @@ public class Pantheon {
 	
 	
 	//See http://www.mkyong.com/java/java-properties-file-examples/
-	public void saveConfigValue(){
+	public void saveConfig(){
 		
 		// Try saving config
 		try {
