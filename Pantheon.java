@@ -5,7 +5,8 @@ import javax.swing.*;
 import java.io.*;
 import java.util.Properties;
 import java.awt.*;
-import java.awt.event.*;  
+import java.awt.event.*;
+import java.net.*;
 
 public class Pantheon {
 	
@@ -73,18 +74,8 @@ public class Pantheon {
 		// Button Submit Function
 		authenticateButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				try{
-					Runtime rt = Runtime.getRuntime();
-					Process pr = rt.exec("cscript ./terminus/vendor/bin/ terminus auth:login --machine-token="+tokenTextField.getText());
-					BufferedReader input = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-					String line=null;
-					while((line=input.readLine()) != null) {
-						System.out.println(line);
-					}
-				}
-				catch(IOException ex){
-					ex.printStackTrace();
-				}
+				//authenticate call here
+				System.out.print(pantheonCall("/authorize/machine-token"));
 			}
 		});
 
@@ -116,18 +107,7 @@ public class Pantheon {
 		// Button Submit Function
 		upstreamRefreshButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				try{
-					Runtime rt = Runtime.getRuntime();
-					Process pr = rt.exec("terminus/vendor/bin/terminus upstream:list");
-					BufferedReader input = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-					String line=null;
-					while((line=input.readLine()) != null) {
-						System.out.println(line);
-					}
-				}
-				catch(IOException ex){
-					ex.printStackTrace();
-				}
+				// upstream list retrieve here
 			}
 		});
 		
@@ -137,6 +117,54 @@ public class Pantheon {
 		
     }
 	
+	
+	public String pantheonCall(String endpoint){
+		HttpURLConnection connection = null;
+
+		try {
+			// Create connection
+			URL url = new URL("https://terminus.pantheon.io/api"+endpoint);
+			connection = (HttpURLConnection) url.openConnection();
+			connection.setRequestMethod("POST");
+			
+			// Set HTTP Headers
+			connection.setRequestProperty("Host", "terminus.pantheon.io");
+			connection.setRequestProperty("Expect", "null");
+			connection.setRequestProperty("Accept-Encoding", "null");
+			connection.setRequestProperty("User-Agent", "Terminus/1.0.0-alpha (php_version=7.0.12&script=bin/terminus)");
+			connection.setRequestProperty("Content-type", "application/json");
+			connection.setRequestProperty("verify", "1");
+			connection.setRequestProperty("json", "terminus");
+			connection.setRequestProperty("Accept", "null");
+
+			connection.setUseCaches(false);
+			connection.setDoOutput(true);
+
+			//Send request
+			DataOutputStream wr = new DataOutputStream (connection.getOutputStream());
+			wr.writeBytes("{\"machine_token\":\""+tokenTextField.getText()+"\",\"client\":\"terminus\"}");
+			wr.close();
+
+			//Get Response
+			InputStream is = connection.getInputStream();
+			BufferedReader rd = new BufferedReader(new InputStreamReader(is));
+			StringBuilder response = new StringBuilder(); // or StringBuffer if Java version 5+
+			String line;
+			while ((line = rd.readLine()) != null) {
+				response.append(line);
+				response.append('\r');
+			}
+			rd.close();
+			return response.toString();
+		} catch (Exception e) {
+			e.printStackTrace();
+		return null;
+		} finally {
+			if (connection != null) {
+				connection.disconnect();
+			}
+		}
+	}
 	
 	public String loadConfig(String key){
 		try {
@@ -160,9 +188,7 @@ public class Pantheon {
 	}
 	
 	
-	/**
-	* See http://www.mkyong.com/java/java-properties-file-examples/
-	**/
+	//See http://www.mkyong.com/java/java-properties-file-examples/
 	public void saveConfigValue(String key, String value){
 		
 		Properties prop = new Properties();
