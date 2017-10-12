@@ -116,7 +116,15 @@ public class Pantheon {
 				String response = pantheonCall("/users/"+programSettings.getProperty("user_id")+"/memberships/sites","GET");
 				// Note that this is a json array returned as opposed to object.
 				JSONArray responseJson = new JSONArray(response);
-				System.out.print(responseJson.toString());
+				//System.out.print(responseJson.toString());
+				// loop over returned sites adding to list
+				for (int i=0; i < responseJson.length(); i++) {
+				//for (int i=0; i < 1; i++) {
+					//responseJson.getJSONObject(i);
+					//System.out.print(responseJson.getJSONObject(i).getString("label"));
+					String siteTitle = responseJson.getJSONObject(i).getJSONObject("site").getJSONObject("attributes").getString("label");
+					siteToCloneSelectOptions.addElement(siteTitle);
+				}
 				// @todo save config of the sites with ids, then load into select list.
 			}
 		});
