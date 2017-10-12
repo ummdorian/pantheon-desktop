@@ -75,9 +75,11 @@ public class Pantheon {
 		authenticateButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
 				// authenticate call here
-				JSONObject authenticationResponse = new JSONObject(pantheonCall("/authorize/machine-token"));
+				JSONObject authenticationResponse = new JSONObject(pantheonCall("/authorize/machine-token","POST"));
+				
 				// save returned user_id
 				programSettings.setProperty("user_id",authenticationResponse.getString("user_id"));
+				programSettings.setProperty("session",authenticationResponse.getString("session"));
 				saveConfig();
 			}
 		});
@@ -104,14 +106,18 @@ public class Pantheon {
 		siteToCloneSelectList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		siteToClonePanel.add(siteToCloneSelectList);
 		
-		// Upstream Refresh Button
+		// Update Site Options Button
 		JButton updateSiteOptionsButton = new JButton("Update Site Options");
 		siteToClonePanel.add(updateSiteOptionsButton);
 		// Button Submit Function
 		updateSiteOptionsButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
 				// update site options
-				
+				String response = pantheonCall("/users/"+programSettings.getProperty("user_id")+"/memberships/sites","GET");
+				// Note that this is a json array returned as opposed to object.
+				JSONArray responseJson = new JSONArray(response);
+				System.out.print(responseJson.toString());
+				// @todo save config of the sites with ids, then load into select list.
 			}
 		});
 		
@@ -122,32 +128,46 @@ public class Pantheon {
     }
 	
 	
-	public String pantheonCall(String endpoint){
+	public String pantheonCall(String endpoint, String httpMethod){
 		HttpURLConnection connection = null;
 
 		try {
 			// Create connection
 			URL url = new URL("https://terminus.pantheon.io/api"+endpoint);
 			connection = (HttpURLConnection) url.openConnection();
-			connection.setRequestMethod("POST");
+			connection.setRequestMethod(httpMethod);
 			
 			// Set HTTP Headers
 			connection.setRequestProperty("Host", "terminus.pantheon.io");
-			connection.setRequestProperty("Expect", "null");
+			if(httpMethod == "POST"){
+				connection.setRequestProperty("Expect", "null");
+			}
 			connection.setRequestProperty("Accept-Encoding", "null");
 			connection.setRequestProperty("User-Agent", "Terminus/1.0.0-alpha (php_version=7.0.12&script=bin/terminus)");
 			connection.setRequestProperty("Content-type", "application/json");
+			if(httpMethod == "GET"){
+				connection.setRequestProperty("Authorization","Bearer "+programSettings.getProperty("session"));
+				connection.setRequestProperty("headers","Bearer "+programSettings.getProperty("session"));
+			}
 			connection.setRequestProperty("verify", "1");
-			connection.setRequestProperty("json", "terminus");
+			if(httpMethod == "POST"){
+				connection.setRequestProperty("json", "terminus");
+			}
+			if(httpMethod == "GET"){
+				connection.setRequestProperty("method", "get");
+				connection.setRequestProperty("absolute_url", "");
+			}
 			connection.setRequestProperty("Accept", "null");
 
 			connection.setUseCaches(false);
 			connection.setDoOutput(true);
 
 			//Send request
-			DataOutputStream wr = new DataOutputStream (connection.getOutputStream());
-			wr.writeBytes("{\"machine_token\":\""+tokenTextField.getText()+"\",\"client\":\"terminus\"}");
-			wr.close();
+			if(httpMethod == "POST"){
+				DataOutputStream wr = new DataOutputStream (connection.getOutputStream());
+				wr.writeBytes("{\"machine_token\":\""+tokenTextField.getText()+"\",\"client\":\"terminus\"}");
+				wr.close();
+			}
 
 			//Get Response
 			InputStream is = connection.getInputStream();
