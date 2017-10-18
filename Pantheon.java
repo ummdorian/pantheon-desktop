@@ -4,6 +4,9 @@
 import javax.swing.*;
 import java.io.*;
 import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Iterator;
 import java.awt.*;
 import java.awt.event.*;
 import java.net.*;
@@ -97,14 +100,18 @@ public class Pantheon {
 		
 		// Site To Clone Select List
 		final DefaultListModel siteToCloneSelectOptions = new DefaultListModel();
-		siteToCloneSelectOptions.addElement("Site 1");
-		siteToCloneSelectOptions.addElement("Site 2");
+		// Load user's sites into the list
+		String userSites = programSettings.getProperty("userSites");
+		if(userSites != null){
+			JSONObject userSitesJsonObject = new JSONObject(userSites);
+			for(Iterator iterator = userSitesJsonObject.keySet().iterator(); iterator.hasNext();) {
+				siteToCloneSelectOptions.addElement((String) iterator.next());
+			}
+		}
 		JList siteToCloneSelectList = new JList(siteToCloneSelectOptions);
-		siteToCloneSelectList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
-		siteToCloneSelectList.setLayoutOrientation(JList.HORIZONTAL_WRAP);
-		siteToCloneSelectList.setVisibleRowCount(-1);
+		siteToCloneSelectList.setVisibleRowCount(3);
 		siteToCloneSelectList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		siteToClonePanel.add(siteToCloneSelectList);
+		siteToClonePanel.add(new JScrollPane(siteToCloneSelectList));
 		
 		// Update Site Options Button
 		JButton updateSiteOptionsButton = new JButton("Update Site Options");
@@ -112,24 +119,26 @@ public class Pantheon {
 		// Button Submit Function
 		updateSiteOptionsButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				// update site options
+				// Update site options
 				String response = pantheonCall("/users/"+programSettings.getProperty("user_id")+"/memberships/sites","GET");
 				// Note that this is a json array returned as opposed to object.
 				JSONArray responseJson = new JSONArray(response);
-				//System.out.print(responseJson.toString());
-				// loop over returned sites adding to list
+				// This is the java version of an associative array
+				Map<String, String> userSites = new HashMap<String, String>();
+				// Loop over returned sites adding to list
 				for (int i=0; i < responseJson.length(); i++) {
-				//for (int i=0; i < 1; i++) {
-					//responseJson.getJSONObject(i);
-					//System.out.print(responseJson.getJSONObject(i).getString("label"));
-					String siteTitle = responseJson.getJSONObject(i).getJSONObject("site").getJSONObject("attributes").getString("label");
-					siteToCloneSelectOptions.addElement(siteTitle);
+					String siteName = responseJson.getJSONObject(i).getJSONObject("site").getString("name");
+					String siteLabel = responseJson.getJSONObject(i).getJSONObject("site").getJSONObject("attributes").getString("label");
+					siteToCloneSelectOptions.addElement(siteLabel);
+					userSites.put(siteLabel, siteName);
 				}
-				// @todo save config of the sites with ids, then load into select list.
+				// Save just the info about the sites we're interested in
+				programSettings.setProperty("userSites",new JSONObject(userSites).toString());
+				saveConfig();
 			}
 		});
 		
-        //Display the window.
+        // Display the window.
         frame.pack();
         frame.setVisible(true);
 		
